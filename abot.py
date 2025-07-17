@@ -1,29 +1,29 @@
 import logging
 import os
 import re
-from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
-    MessageHandler,
     CommandHandler,
+    MessageHandler,
     ContextTypes,
     filters
 )
-import openai
+from openai import OpenAI
+from dotenv import load_dotenv
 
-# 🧪 .env فائل سے متغیرات لوڈ کریں
+# Load .env variables
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# 🧠 OpenAI کلائنٹ بنائیں
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
+# OpenAI client
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-# 📝 لاگنگ سیٹ اپ
+# Logging
 logging.basicConfig(level=logging.INFO)
 
-# 🎉 /start پر ویلکم میسج
+# /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     welcome_msg = (
@@ -38,22 +38,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(welcome_msg, parse_mode="Markdown")
 
-# 🤝 ہیلو/ہائے کے جوابات
+# Handle greeting
 async def handle_greeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    name = update.effective_user.first_name
-    await update.message.reply_text(f"👋 Hi {name}, I'm ready to write code scripts for you!")
+    user = update.effective_user
+    await update.message.reply_text(f"👋 Hi {user.first_name}, I'm ready to write scripts for you!")
 
-# 🧠 کوڈ/سکرپٹ جنریٹر
+# Handle general messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_msg = update.message.text or ""
-
-    if re.match(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$", user_msg.strip()):
+    text = update.message.text.strip()
+    
+    # Greeting filter
+    if re.match(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$", text):
         return await handle_greeting(update, context)
 
     prompt = f"""You are a professional code generator assistant. The user is asking for a code snippet or a script. 
 Only reply with the requested code script without any explanation or intro. Supported languages: Python, JavaScript, C++, Bash, Telegram bot, etc.
 
-User Request: {user_msg}
+User Request: {text}
 
 Your Reply (only script):"""
 
@@ -67,23 +68,20 @@ Your Reply (only script):"""
             temperature=0.3,
             max_tokens=1500,
         )
-        script = response.choices[0].message.content.strip()
-        await update.message.reply_text(f"```\n{script}\n```", parse_mode="Markdown")
+        code = response.choices[0].message.content.strip()
+        await update.message.reply_text(f"```\n{code}\n```", parse_mode="Markdown")
 
     except Exception as e:
-        logging.error(f"OpenAI Error: {e}")
+        logging.error(f"❌ OpenAI Error: {e}")
         await update.message.reply_text(f"❌ OpenAI API سے جواب حاصل نہیں ہو سکا:\n\n{e}")
 
-# 🤖 بوٹ اسٹارٹ کریں
+# Run bot
 if __name__ == "__main__":
-    if not OPENAI_API_KEY or not BOT_TOKEN:
-        print("❌ Environment variables missing! Please check your .env file.")
-        exit(1)
-
+    if not BOT_TOKEN:
+        raise ValueError("❌ BOT_TOKEN environment variable not set.")
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$"), handle_greeting))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
     print("🤖 AI Script Generator Bot is running...")
     app.run_polling()
