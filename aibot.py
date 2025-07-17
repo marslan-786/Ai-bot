@@ -11,7 +11,7 @@ from telegram.ext import (
 import re
 
 # 🔐 اپنی OpenAI API key یہاں لگائیں
-openai.api_key = "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"
+openai.api_key = "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"
 
 # 🔐 اپنا Telegram Bot Token یہاں ڈالیں
 BOT_TOKEN = "8051814176:AAEZhLo7ZXPTT4dezcvoyIn51Ns13YyRZMM"
