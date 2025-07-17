@@ -1,7 +1,6 @@
 python-telegram-bot==20.7
-torch>=1.13.0
+torch
 opencv-python
 numpy
 Pillow
-Real-ESRGAN
 gdown

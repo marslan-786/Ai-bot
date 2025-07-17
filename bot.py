@@ -1,4 +1,6 @@
 import logging
+import sys
+sys.path.append("Real-ESRGAN")
 import os
 from telegram import Update, InputFile
 from telegram.ext import (
