@@ -12,21 +12,15 @@ from telegram.ext import (
     filters
 )
 
-# 🧪 .env فائل سے Environment Variables لوڈ کریں
+# Load environment variables
 load_dotenv()
-
-# 🗝️ Environment سے API Keys حاصل کریں
 openai.api_key = os.getenv("OPENAI_API_KEY")
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # ← یہ لائن اپڈیٹ کی گئی ہے
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# 🔐 چیک کریں کہ ٹوکن موجود ہیں
-if not openai.api_key or not BOT_TOKEN:
-    raise Exception("❌ OPENAI_API_KEY یا TELEGRAM_BOT_TOKEN environment میں سیٹ نہیں ہے!")
-
-# 📜 لاگنگ سیٹ اپ
+# Logging
 logging.basicConfig(level=logging.INFO)
 
-# 🎉 /start کمانڈ پر خوش آمدیدی پیغام
+# Start Command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     welcome_msg = (
@@ -41,16 +35,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(welcome_msg, parse_mode="Markdown")
 
-# 💬 Greetings
+# Handle greetings
 async def handle_greeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.effective_user.first_name
     await update.message.reply_text(f"👋 Hi {name}, I'm ready to write code scripts for you!")
 
-# 🧠 Script Generator
+# Handle AI script generation
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_msg = update.message.text or ""
 
-    # Greetings detection
     if re.match(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$", user_msg.strip()):
         return await handle_greeting(update, context)
 
@@ -73,12 +66,20 @@ Your Reply (only script):"""
         )
         script = response.choices[0].message.content.strip()
         await update.message.reply_text(f"```\n{script}\n```", parse_mode="Markdown")
-    except Exception as e:
-        logging.error(f"OpenAI Error: {e}")
-        await update.message.reply_text("❌ OpenAI API سے جواب حاصل نہیں ہو سکا، دوبارہ کوشش کریں۔")
 
-# 🤖 Bot Runner
+    except Exception as e:
+        logging.error(f"❌ OpenAI Error: {e}")
+        await update.message.reply_text(
+            f"❌ OpenAI API سے جواب حاصل نہیں ہو سکا:\n`{str(e)}`", parse_mode="Markdown"
+        )
+
+# Run the bot
 if __name__ == "__main__":
+    if not openai.api_key:
+        print("❌ OPENAI_API_KEY environment variable not set.")
+    if not BOT_TOKEN:
+        print("❌ BOT_TOKEN environment variable not set.")
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$"), handle_greeting))
