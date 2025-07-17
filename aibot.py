@@ -1,20 +1,22 @@
+# یہ آپ کی bot.py فائل ہے
 import logging
 import openai
+import os
+import re
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     MessageHandler,
-    ContextTypes,
     CommandHandler,
+    ContextTypes,
     filters,
 )
-import re
+from dotenv import load_dotenv
 
-# 🔐 اپنی OpenAI API key یہاں لگائیں
-openai.api_key = "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"
-
-# 🔐 اپنا Telegram Bot Token یہاں ڈالیں
-BOT_TOKEN = "8051814176:AAEZhLo7ZXPTT4dezcvoyIn51Ns13YyRZMM"
+# 🔐 .env فائل سے API keys لوڈ کریں
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # 📜 لاگنگ سیٹ اپ
 logging.basicConfig(level=logging.INFO)
@@ -43,7 +45,6 @@ async def handle_greeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_msg = update.message.text or ""
 
-    # اگر greet ہو تو الگ ہینڈل کریں
     if re.match(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$", user_msg.strip()):
         return await handle_greeting(update, context)
 
@@ -51,7 +52,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 Only reply with the requested code script without any explanation or intro. Supported languages: Python, JavaScript, C++, Bash, Telegram bot, etc.
 
 User Request: {user_msg}
-    
+
 Your Reply (only script):"""
 
     try:
@@ -66,6 +67,7 @@ Your Reply (only script):"""
         )
         script = response.choices[0].message.content.strip()
         await update.message.reply_text(f"```\n{script}\n```", parse_mode="Markdown")
+
     except Exception as e:
         logging.error(f"OpenAI Error: {e}")
         await update.message.reply_text("❌ OpenAI API سے جواب حاصل نہیں ہو سکا، دوبارہ کوشش کریں۔")
