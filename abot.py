@@ -1,5 +1,4 @@
 import logging
-import openai
 import os
 import re
 from dotenv import load_dotenv
@@ -11,16 +10,20 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
+import openai
 
-# Load environment variables
+# 🧪 .env فائل سے متغیرات لوڈ کریں
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# Logging
+# 🧠 OpenAI کلائنٹ بنائیں
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
+# 📝 لاگنگ سیٹ اپ
 logging.basicConfig(level=logging.INFO)
 
-# Start Command
+# 🎉 /start پر ویلکم میسج
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     welcome_msg = (
@@ -35,12 +38,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(welcome_msg, parse_mode="Markdown")
 
-# Handle greetings
+# 🤝 ہیلو/ہائے کے جوابات
 async def handle_greeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.effective_user.first_name
     await update.message.reply_text(f"👋 Hi {name}, I'm ready to write code scripts for you!")
 
-# Handle AI script generation
+# 🧠 کوڈ/سکرپٹ جنریٹر
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_msg = update.message.text or ""
 
@@ -55,7 +58,7 @@ User Request: {user_msg}
 Your Reply (only script):"""
 
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You only generate clean scripts."},
@@ -68,17 +71,14 @@ Your Reply (only script):"""
         await update.message.reply_text(f"```\n{script}\n```", parse_mode="Markdown")
 
     except Exception as e:
-        logging.error(f"❌ OpenAI Error: {e}")
-        await update.message.reply_text(
-            f"❌ OpenAI API سے جواب حاصل نہیں ہو سکا:\n`{str(e)}`", parse_mode="Markdown"
-        )
+        logging.error(f"OpenAI Error: {e}")
+        await update.message.reply_text(f"❌ OpenAI API سے جواب حاصل نہیں ہو سکا:\n\n{e}")
 
-# Run the bot
+# 🤖 بوٹ اسٹارٹ کریں
 if __name__ == "__main__":
-    if not openai.api_key:
-        print("❌ OPENAI_API_KEY environment variable not set.")
-    if not BOT_TOKEN:
-        print("❌ BOT_TOKEN environment variable not set.")
+    if not OPENAI_API_KEY or not BOT_TOKEN:
+        print("❌ Environment variables missing! Please check your .env file.")
+        exit(1)
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
