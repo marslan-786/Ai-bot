@@ -8,39 +8,42 @@ from telegram.ext import (
     CommandHandler,
     filters,
 )
-import os
 import re
 
-# 🛡️ Logging setup
-logging.basicConfig(level=logging.INFO)
-
-# ✅ Set your OpenAI API key and Telegram Bot Token
+# 🔐 اپنی OpenAI API key یہاں لگائیں
 openai.api_key = "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"
+
+# 🔐 اپنا Telegram Bot Token یہاں ڈالیں
 BOT_TOKEN = "8051814176:AAEZhLo7ZXPTT4dezcvoyIn51Ns13YyRZMM"
 
-# 🟢 /start command handler
+# 📜 لاگنگ سیٹ اپ
+logging.basicConfig(level=logging.INFO)
+
+# 🟢 /start command پر خوش آمدید پیغام
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    welcome_text = (
-        f"👋 *Welcome to Impossible AI Bot!*\n\n"
-        f"📜 I can generate code scripts in the following languages:\n"
-        f"`Python`, `JavaScript`, `C++`, `Bash`, `Telegram Bots`, `HTML`, `CSS`\n\n"
-        f"⭐ *VIP Feature Unlocked!*\n"
-        f"👤 Created by [{user.full_name}](tg://user?id={only_possible})\n\n"
-        f"_Just type your script request like:_ `Telegram bot to ban users`"
+    welcome_msg = (
+        f"👋 Hello {user.first_name}!\n\n"
+        f"🤖 *Welcome to Impossible AI Chat Bot!*\n"
+        f"This bot is for scripting only.\n\n"
+        f"🧠 Supported Languages:\n"
+        f"`Python`, `JavaScript`, `C++`, `Bash`, `HTML`, `Telegram Bots`\n\n"
+        f"👑 Owner: [@{user.username}](tg://user?id={user.id})\n\n"
+        f"💬 Just type your request like:\n"
+        f"`Make me a telegram bot to ban users`"
     )
-    await update.message.reply_text(welcome_text, parse_mode="Markdown")
+    await update.message.reply_text(welcome_msg, parse_mode="Markdown")
 
-# 🟢 Handle greetings like hi, hello, etc.
+# 🟢 Greetings (Hi, Hello, etc.)
 async def handle_greeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user.first_name
-    await update.message.reply_text(f"👋 Hello {user}! I'm here to write your code scripts. What can I help you with?")
+    name = update.effective_user.first_name
+    await update.message.reply_text(f"👋 Hi {name}, I'm ready to write code scripts for you!")
 
-# 🟢 Handle code request and respond with OpenAI result
+# 🧠 Handle all code/script requests
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_msg = update.message.text or ""
 
-    # greetings skip from script generation
+    # اگر greet ہو تو الگ ہینڈل کریں
     if re.match(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$", user_msg.strip()):
         return await handle_greeting(update, context)
 
@@ -58,21 +61,21 @@ Your Reply (only script):"""
                 {"role": "system", "content": "You only generate clean scripts."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.2,
+            temperature=0.3,
             max_tokens=1500,
         )
-        script_code = response.choices[0].message.content.strip()
-        await update.message.reply_text(f"```\n{script_code}\n```", parse_mode="Markdown")
-
+        script = response.choices[0].message.content.strip()
+        await update.message.reply_text(f"```\n{script}\n```", parse_mode="Markdown")
     except Exception as e:
         logging.error(f"OpenAI Error: {e}")
-        await update.message.reply_text("❌ OpenAI سے جواب حاصل کرنے میں مسئلہ پیش آیا۔")
+        await update.message.reply_text("❌ OpenAI API سے جواب حاصل نہیں ہو سکا، دوبارہ کوشش کریں۔")
 
-# 🤖 Start the bot
+# 🔁 Bot runner
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r"(?i)^(hi|hello|salam|aslam o alaikum|how are you|hey)$"), handle_greeting))
+    app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$"), handle_greeting))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
     print("🤖 AI Script Generator Bot is running...")
     app.run_polling()
