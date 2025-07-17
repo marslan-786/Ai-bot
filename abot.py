@@ -12,15 +12,21 @@ from telegram.ext import (
     filters
 )
 
-# 🧪 Load .env
+# 🧪 .env فائل سے Environment Variables لوڈ کریں
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# 📝 Logging setup
+# 🗝️ Environment سے API Keys حاصل کریں
+openai.api_key = os.getenv("OPENAI_API_KEY")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # ← یہ لائن اپڈیٹ کی گئی ہے
+
+# 🔐 چیک کریں کہ ٹوکن موجود ہیں
+if not openai.api_key or not BOT_TOKEN:
+    raise Exception("❌ OPENAI_API_KEY یا TELEGRAM_BOT_TOKEN environment میں سیٹ نہیں ہے!")
+
+# 📜 لاگنگ سیٹ اپ
 logging.basicConfig(level=logging.INFO)
 
-# 🎉 Start command
+# 🎉 /start کمانڈ پر خوش آمدیدی پیغام
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     welcome_msg = (
@@ -35,7 +41,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(welcome_msg, parse_mode="Markdown")
 
-# 🧠 Greetings
+# 💬 Greetings
 async def handle_greeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.effective_user.first_name
     await update.message.reply_text(f"👋 Hi {name}, I'm ready to write code scripts for you!")
@@ -44,7 +50,7 @@ async def handle_greeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_msg = update.message.text or ""
 
-    # Greeting detection
+    # Greetings detection
     if re.match(r"(?i)^(hi|hello|salam|hey|aslam o alaikum|how are you)$", user_msg.strip()):
         return await handle_greeting(update, context)
 
@@ -71,7 +77,7 @@ Your Reply (only script):"""
         logging.error(f"OpenAI Error: {e}")
         await update.message.reply_text("❌ OpenAI API سے جواب حاصل نہیں ہو سکا، دوبارہ کوشش کریں۔")
 
-# 🤖 Bot start
+# 🤖 Bot Runner
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
