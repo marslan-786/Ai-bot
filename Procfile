@@ -1,0 +1,1 @@
+worker: python3 install_model.py && python3 bot.py
